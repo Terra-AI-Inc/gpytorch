@@ -392,9 +392,8 @@ class DirichletClassificationLikelihood(FixedNoiseGaussianLikelihood):
     """
 
     def _prepare_targets(
-        self, targets: Tensor, alpha_epsilon: float = 0.01, dtype: torch.dtype = torch.float
+        self, num_classes, targets: Tensor, alpha_epsilon: float = 0.01, dtype: torch.dtype = torch.float
     ) -> Tuple[Tensor, Tensor, int]:
-        num_classes = int(targets.max() + 1)
         # set alpha = \alpha_\epsilon
         alpha = alpha_epsilon * torch.ones(targets.shape[-1], num_classes, device=targets.device, dtype=dtype)
 
@@ -407,10 +406,11 @@ class DirichletClassificationLikelihood(FixedNoiseGaussianLikelihood):
         # y = log(alpha) - 0.5 * sigma^2
         transformed_targets = alpha.log() - 0.5 * sigma2_i
 
-        return sigma2_i.transpose(-2, -1).type(dtype), transformed_targets.type(dtype), num_classes
+        return sigma2_i.transpose(-2, -1).type(dtype), transformed_targets.type(dtype)
 
     def __init__(
         self,
+        num_classes: int,
         targets: Tensor,
         alpha_epsilon: float = 0.01,
         learn_additional_noise: Optional[bool] = False,
@@ -418,8 +418,8 @@ class DirichletClassificationLikelihood(FixedNoiseGaussianLikelihood):
         dtype: torch.dtype = torch.float,
         **kwargs: Any,
     ) -> None:
-        sigma2_labels, transformed_targets, num_classes = self._prepare_targets(
-            targets, alpha_epsilon=alpha_epsilon, dtype=dtype
+        sigma2_labels, transformed_targets = self._prepare_targets(
+            num_classes, targets, alpha_epsilon=alpha_epsilon, dtype=dtype
         )
         super().__init__(
             noise=sigma2_labels,
